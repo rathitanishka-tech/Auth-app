@@ -7,15 +7,15 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ IMPORTANT: use localhost (not 127.0.0.1)
+
 app.use(cors({
-  origin: "http://localhost:5500",
+  origin: "https://auth-app-freeapi.netlify.app",
   credentials: true
 }));
 
 const BASE = "https://api.freeapi.app/api/v1/users";
 
-// 🔐 LOGIN
+
 app.post("/login", async (req, res) => {
   try {
     const response = await fetch(`${BASE}/login`, {
@@ -26,13 +26,18 @@ app.post("/login", async (req, res) => {
 
     const data = await response.json();
 
-    // ✅ FIX: forward ALL cookies properly
-    const cookies = response.headers.getSetCookie?.() 
-      || response.headers.raw?.()["set-cookie"];
 
-    if (cookies) {
-      res.setHeader("Set-Cookie", cookies);
-    }
+
+   const cookies = response.headers.get("set-cookie");
+
+if (cookies) {
+  const fixedCookie = cookies
+    .replace(/SameSite=Lax/gi, "SameSite=None")
+    .replace(/Secure/gi, "Secure")
+    + "; SameSite=None; Secure";
+
+  res.setHeader("Set-Cookie", fixedCookie);
+}
 
     res.status(response.status).json(data);
 
@@ -42,7 +47,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// 📝 REGISTER
+
 app.post("/register", async (req, res) => {
   try {
     const response = await fetch(`${BASE}/register`, {
@@ -60,7 +65,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// 👤 CURRENT USER
+
 app.get("/current-user", async (req, res) => {
   try {
     const response = await fetch(`${BASE}/current-user`, {
@@ -79,7 +84,7 @@ app.get("/current-user", async (req, res) => {
   }
 });
 
-// 🚪 LOGOUT
+
 app.post("/logout", async (req, res) => {
   try {
     const response = await fetch(`${BASE}/logout`, {
